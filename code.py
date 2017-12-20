@@ -3,6 +3,22 @@ import board
 import neopixel
 import time
 
+class JSTimer: # TODO modify in such a way that only one check is needed for multiple timeouts
+    def __init__(self):
+        self.pending = False
+    def setTimeout(self, callback, lapse): # pass function without() and lapse in seconds
+        self.timeoutFunc = callback        # Set a new callback
+        self.wait = lapse                  # set a new time to wait for
+        self.pending = True
+        self.startTime = time.monotonic()  # Get start with a base time for hello
+    def checkTimeout(self):
+        if self.pending:
+            current = time.monotonic()
+            elapsed = current - self.startTime
+            if elapsed > self.wait:
+                self.pending = False
+                self.timeoutFunc()
+
 class LED:
     def __init__(self):
         self.RED    = (0x10, 0, 0)
@@ -20,17 +36,20 @@ pixels.fill(led.BLACK)                                                  # Sets a
 pixels.show()                                                           # instantiate recorded changes
 
 class Ball:
-    def __init__(self):
+    def __init__(self, startSpeed):
         self.position = led.NUMBEROF
-    def roll(self, delay):
+        self.timer = JSTimer()
+        self.startSpeed = startSpeed
+    def roll(self):
         self.position = self.position - 1
         pixels.fill(led.BLACK)                                         # Sets all pixels in array to x color
         pixels[self.position] = led.BLUE
         pixels.show()
-        time.sleep(delay)
         if not self.position:
            self.position = led.NUMBEROF
+        self.timer.setTimeout(self.roll, self.startSpeed)
 
-pongball = Ball()
+pongball = Ball(.01)
+pongball.roll()
 while True:
-    pongball.roll(.001)
+    pongball.timer.checkTimeout()
