@@ -1,6 +1,7 @@
 # PONG example Copyright 2017 ~ Paul Beaudet ~ License MIT
+from digitalio import DigitalInOut, Direction, Pull # Methods in digitalio library that we would like (for buttons)
 import board
-import neopixel
+import neopixel                                     # Library for multi colored leds
 import time
 
 class JSTimer: # TODO modify in such a way that only one check is needed for multiple timeouts
@@ -30,6 +31,38 @@ class LED:
         self.BLACK  = (0, 0, 0)
         self.NUMBEROF = 10
 
+class Button():                                           # multiple unique button objects can be created with this one class
+    def __init__(self, pin, bounceTime=0.01):             # __init__ Constructors are called when an instance of an object is created
+        self.button = DigitalInOut(pin)                   # set pin of this unique button to the pin that is given on construction
+        self.button.direction = Direction.INPUT           # direction of a button is always set to INPUT
+        self.button.pull = Pull.DOWN                      # Use internal pull down resistor, opposed to using an external resistor
+        self.changeStart = time.monotonic()               # give a time to start from to keep track of passing time
+        self.bouncePeriod = False                         # bounces happen in a window of milliseconds when metal surfaces connect
+        self.held = False                                 # remember if this button is being held or not
+        self.lastGoodState = self.button.value            # remember first resting state
+        self.bounceTime = bounceTime                      # 10 to 20 milliseconds is a good waiting range to ignore contact bounce
+    def detect(self, onClick, onRelease=False, onHold=False): # poll this method to detect button changes without detecting bounce
+        stateDurration = time.monotonic() - self.changeStart  # durration since last state change
+        if self.bouncePeriod:                             # durring bounce period ( after a detected change )
+            if stateDurration > self.bounceTime:          # ignoring bounces from being detected
+                self.bouncePeriod = False                 # conclude bounce period
+        else:                                             # where there is no concern of bounce
+            currentState = self.button.value              # placehold current button state, may change if parsed multiple times
+            if self.lastGoodState == currentState:        # given state persist / remains same as last good state
+                if currentState and stateDurration > 0.4 and not self.held: # given button is being held DOWN
+                    self.held = True                      # Remember this button is being held
+                    if onHold:                            # if a hold callback was passed
+                        onHold(0.1)                       # execute that callback {blink} with a 100 millisecond durration
+            else:                                         # given state changed, button pressed or released
+                self.changeStart = time.monotonic()       # note timestamp of change to measure how long to ignore potential bounce and detect hold
+                self.bouncePeriod = True                  # this button is now in a period of detecting a bounce
+                self.held = False                         # note that this button is no longer being held in its state, redundant for release
+                self.lastGoodState = currentState         # remember last good state to compare in future
+                if currentState:                          # shorthand for if pressed. pressed == True
+                    onClick()                             # execute callback to call on a click event
+                elif onRelease:                           # opposite of being pressed is being released
+                    onRelease()                           # execute release callback
+
 led = LED();                                                            # instantiate our color constants
 pixels = neopixel.NeoPixel(board.NEOPIXEL, led.NUMBEROF, brightness=.2) # setup and array of neopixels
 pixels.fill(led.BLACK)                                                  # Sets all pixels in array to x color
@@ -45,7 +78,6 @@ class Ball:
         pixels.fill(led.BLACK)                 # Sets all pixels in array to x color, removes last ball frame
         if self.clockwise:                     # given that ball is moving in clockwise direction
             self.position = self.position - 1  # clockwise is moving backwards through our led array
-            print(self.position)
             pixels[self.position] = led.BLUE   # set the led in our array
             pixels.show()                      # this instantiates led to actually light up
             if not self.position:              # given that we have got to the begining of our array
@@ -61,9 +93,21 @@ class Ball:
         if vector is self.position:
             self.clockwise = not self.clockwise
 
-pongball = Ball(1)
-pongball.roll()
-# button b is position 7
-# button a is position 2
+# High level business end of code starts here!
+# instantiate hardware that is going to be used
+buttonA = Button(board.BUTTON_A) # Creates a unique instance of Button class with pin of button A
+buttonB = Button(board.BUTTON_B) # ButtonB is a unique object from buttonA
+pongball = Ball(.05)              # Create a pongball with x speed
+pongball.roll()                  # get dat ball rolling!
+
+def deflectA():
+    pongball.deflect(2) # Button A is near LED position 2
+
+def deflectB():
+    pongball.deflect(7) # Button B is near LED position 7
+
 while True:
+    buttonA.detect(deflectA) # Detect when button is pressed, pass "pointers" to methods to use AKA callbacks
+    # methods/functions without parentheses reffer/point at the act. Using parentheses executes the action
+    buttonB.detect(deflectB) # Also ignores button contact bounces that would produce false signals
     pongball.timer.checkTimeout()
