@@ -72,8 +72,10 @@ class Ball:
     def __init__(self, startSpeed):
         self.position = led.NUMBEROF
         self.timer = JSTimer()
-        self.startSpeed = startSpeed
+        self.frameDelay = startSpeed           # time to delay between frames, less is faster more is slow
         self.clockwise = True
+        self.deflectIncrementor = .049
+        self.volly = False
     def roll(self):
         pixels.fill(led.BLACK)                 # Sets all pixels in array to x color, removes last ball frame
         if self.clockwise:                     # given that ball is moving in clockwise direction
@@ -88,16 +90,26 @@ class Ball:
                 self.position = 0
             pixels[self.position] = led.BLUE
             pixels.show()
-        self.timer.setTimeout(self.roll, self.startSpeed) # set timeout to progress to next frame
+        self.vollyModifier()
+        self.timer.setTimeout(self.roll, self.frameDelay) # set timeout to progress to next frame
     def deflect(self, vector):
         if vector is self.position:
+            self.volly = True
             self.clockwise = not self.clockwise
+    def vollyModifier(self):
+        if self.position is 7 or self.position is 2:
+            if self.volly: # in case ball has been vollied
+                self.frameDelay = self.frameDelay - self.deflectIncrementor
+                self.volly = False
+            else:          # in case there is no volly
+                self.frameDelay = self.frameDelay + self.deflectIncrementor
+            print(self.frameDelay)
 
 # High level business end of code starts here!
 # instantiate hardware that is going to be used
 buttonA = Button(board.BUTTON_A) # Creates a unique instance of Button class with pin of button A
 buttonB = Button(board.BUTTON_B) # ButtonB is a unique object from buttonA
-pongball = Ball(.05)              # Create a pongball with x speed
+pongball = Ball(1)               # Create a pongball with x speed
 pongball.roll()                  # get dat ball rolling!
 
 def deflectA():
