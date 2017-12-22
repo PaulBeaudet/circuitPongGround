@@ -74,8 +74,7 @@ class Ball:
         self.timer = JSTimer()
         self.frameDelay = startSpeed           # time to delay between frames, less is faster more is slow
         self.clockwise = True
-        self.deflectIncrementor = .049
-        self.volly = False
+        self.vollyWait = False                 # flag that prevents speed from being incremented and decremented at same time
     def roll(self):
         pixels.fill(led.BLACK)                 # Sets all pixels in array to x color, removes last ball frame
         if self.clockwise:                     # given that ball is moving in clockwise direction
@@ -90,20 +89,32 @@ class Ball:
                 self.position = 0
             pixels[self.position] = led.BLUE
             pixels.show()
-        self.vollyModifier()
+        self.volly()
         self.timer.setTimeout(self.roll, self.frameDelay) # set timeout to progress to next frame
     def deflect(self, vector):
         if vector is self.position:
-            self.volly = True
             self.clockwise = not self.clockwise
-    def vollyModifier(self):
+            self.volly(True)
+    def volly(self, volly=False):
+        volocity = .298
+        if self.frameDelay <= .05:
+            volocity = .002
+        elif self.frameDelay > .05 and self.frameDelay <= .1:
+            volocity = .005
+        elif self.frameDelay > .1 and self.frameDelay <= .5:
+            volocity = .094
         if self.position is 7 or self.position is 2:
-            if self.volly: # in case ball has been vollied
-                self.frameDelay = self.frameDelay - self.deflectIncrementor
-                self.volly = False
-            else:          # in case there is no volly
-                self.frameDelay = self.frameDelay + self.deflectIncrementor
-            print(self.frameDelay)
+            if volly:                      # given this is a trigger for a volly
+                self.frameDelay = self.frameDelay - volocity
+                self.vollyWait = False     # disarm decrement of frame rate
+            else:                          # in case there is no volly
+                self.vollyWait = True      # wait flag gives opportunity for volly to happen before adding time
+            return                         # it will trigger itself in final condition other wise
+        if not volly and self.vollyWait:   # given wait flag was never disarmed by a volly
+            if self.frameDelay > 1:
+                volocity = 0
+            self.frameDelay = self.frameDelay + volocity # slow down ball given a miss
+            self.vollyWait = False         # only do this once it gets polled on every frame
 
 # High level business end of code starts here!
 # instantiate hardware that is going to be used
