@@ -20,7 +20,7 @@ class JSTimer: # TODO modify in such a way that only one check is needed for mul
                 self.pending = False
                 self.timeoutFunc()
 
-class LED:
+class PixelControl:
     def __init__(self):
         self.RED    = (0x10, 0, 0)
         self.YELLOW = (0x10, 0x10, 0)
@@ -30,6 +30,18 @@ class LED:
         self.PURPLE = (0x10, 0, 0x10)
         self.BLACK  = (0, 0, 0)
         self.NUMBEROF = 10
+        self.pixels = neopixel.NeoPixel(board.NEOPIXEL, self.NUMBEROF, brightness=.2) # setup and array of neopixels
+        self.pixels[0] = self.BLACK
+        self.pixels[1] = self.GREEN
+        self.pixels[2] = self.PURPLE
+        self.pixels[3] = self.GREEN
+        self.pixels[4] = self.BLACK
+        self.pixels[5] = self.BLACK
+        self.pixels[6] = self.GREEN
+        self.pixels[7] = self.PURPLE
+        self.pixels[8] = self.GREEN
+        self.pixels[9] = self.BLACK
+        self.pixels.show()                                # instantiate recorded changes
 
 class Button():                                           # multiple unique button objects can be created with this one class
     def __init__(self, pin, bounceTime=0.01):             # __init__ Constructors are called when an instance of an object is created
@@ -63,34 +75,32 @@ class Button():                                           # multiple unique butt
                 elif onRelease:                           # opposite of being pressed is being released
                     onRelease()                           # execute release callback
 
-led = LED();                                                            # instantiate our color constants
-pixels = neopixel.NeoPixel(board.NEOPIXEL, led.NUMBEROF, brightness=.2) # setup and array of neopixels
-pixels.fill(led.BLACK)                                                  # Sets all pixels in array to x color
-pixels.show()                                                           # instantiate recorded changes
-
 class Ball:
     def __init__(self, startSpeed):
-        self.position = led.NUMBEROF
+        self.position = neo.NUMBEROF
         self.lastPos = 0
+        self.offsetColor = neo.BLACK
         self.timer = JSTimer()
         self.frameDelay = startSpeed           # time to delay between frames, less is faster more is slow
         self.clockwise = True
         self.vollyWait = False                 # flag that prevents speed from being incremented and decremented at same time
     def roll(self):
-        pixels[self.lastPos] = led.BLACK       # turn off last led that was lit
+        neo.pixels[self.lastPos] = self.offsetColor# turn off last led that was lit
         if self.clockwise:                     # given that ball is moving in clockwise direction
             self.position = self.position - 1  # clockwise is moving backwards through our led array
-            pixels[self.position] = led.BLUE   # set the led in our array
-            pixels.show()                      # this instantiates led to actually light up
+            self.offsetColor = neo.pixels[self.position]
+            neo.pixels[self.position] = neo.BLUE   # set the led in our array
+            neo.pixels.show()                      # this instantiates led to actually light up
             self.lastPos = self.position       # remember last led lit
             if not self.position:              # given that we have got to the begining of our array
-                self.position = led.NUMBEROF   # go back to end of array
+                self.position = neo.NUMBEROF   # go back to end of array
         else:                                  # if direction has been set to counter-clockwise 
             self.position = self.position + 1  # set incremental counter-clockwise position
-            if self.position == led.NUMBEROF:  # given we exceeded bounds of our array
+            if self.position == neo.NUMBEROF:  # given we exceeded bounds of our array
                 self.position = 0
-            pixels[self.position] = led.BLUE
-            pixels.show()
+            self.offsetColor = neo.pixels[self.position]
+            neo.pixels[self.position] = neo.BLUE
+            neo.pixels.show()
             self.lastPos = self.position
         self.volly()
         self.timer.setTimeout(self.roll, self.frameDelay) # set timeout to progress to next frame
@@ -121,6 +131,7 @@ class Ball:
 
 # High level business end of code starts here!
 # instantiate hardware that is going to be used
+neo = PixelControl();            # instantiate added controls and constants for neopixels
 buttonA = Button(board.BUTTON_A) # Creates a unique instance of Button class with pin of button A
 buttonB = Button(board.BUTTON_B) # ButtonB is a unique object from buttonA
 pongball = Ball(1)               # Create a pongball with x speed
