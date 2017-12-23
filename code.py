@@ -71,16 +71,18 @@ pixels.show()                                                           # instan
 class Ball:
     def __init__(self, startSpeed):
         self.position = led.NUMBEROF
+        self.lastPos = 0
         self.timer = JSTimer()
         self.frameDelay = startSpeed           # time to delay between frames, less is faster more is slow
         self.clockwise = True
         self.vollyWait = False                 # flag that prevents speed from being incremented and decremented at same time
     def roll(self):
-        pixels.fill(led.BLACK)                 # Sets all pixels in array to x color, removes last ball frame
+        pixels[self.lastPos] = led.BLACK       # turn off last led that was lit
         if self.clockwise:                     # given that ball is moving in clockwise direction
             self.position = self.position - 1  # clockwise is moving backwards through our led array
             pixels[self.position] = led.BLUE   # set the led in our array
             pixels.show()                      # this instantiates led to actually light up
+            self.lastPos = self.position       # remember last led lit
             if not self.position:              # given that we have got to the begining of our array
                 self.position = led.NUMBEROF   # go back to end of array
         else:                                  # if direction has been set to counter-clockwise 
@@ -89,6 +91,7 @@ class Ball:
                 self.position = 0
             pixels[self.position] = led.BLUE
             pixels.show()
+            self.lastPos = self.position
         self.volly()
         self.timer.setTimeout(self.roll, self.frameDelay) # set timeout to progress to next frame
     def deflect(self, vector):
