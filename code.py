@@ -22,10 +22,10 @@ class JSTimer: # TODO modify in such a way that only one check is needed for mul
 
 class PixelControl:
     def __init__(self):
-        self.RED    = (0x10, 0, 0)
-        self.YELLOW = (0x10, 0x10, 0)
+        # self.RED    = (0x10, 0, 0)
+        # self.YELLOW = (0x10, 0x10, 0)
         self.GREEN  = (0, 0x10, 0)
-        self.AQUA   = (0, 0x10, 0x10)
+        # self.AQUA   = (0, 0x10, 0x10)
         self.BLUE   = (0, 0, 0x10)
         self.PURPLE = (0x10, 0, 0x10)
         self.BLACK  = (0, 0, 0)
@@ -102,12 +102,16 @@ class Ball:
             neo.pixels[self.position] = neo.BLUE
             neo.pixels.show()
             self.lastPos = self.position
-        self.volly()
+        self.volly()                           # Check for volocity changes
+        player1.defence(self.position)         # Check for misses
+        # player2.defence(self.position)
         self.timer.setTimeout(self.roll, self.frameDelay) # set timeout to progress to next frame
     def deflect(self, vector):
         if vector is self.position:
             self.clockwise = not self.clockwise
             self.volly(True)
+            return True
+        return False
     def volly(self, volly=False):
         volocity = .298
         if self.frameDelay <= .05:
@@ -129,16 +133,54 @@ class Ball:
             self.frameDelay = self.frameDelay + volocity # slow down ball given a miss
             self.vollyWait = False         # only do this once it gets polled on every frame
 
+class Player:      # tracks individual player state
+    def __init__(self, ledNumber):
+        self.score = 0
+        self.relayAward = 1
+        self.vollies = 0
+        self.ledNumber = ledNumber
+        self.waitingForVolly = False
+    def penalty(self, penalty=0):
+        self.vollies = 0
+        if penalty:
+            self.score = self.score - penalty
+        self.relayAward = 1
+    def printScore(self):
+        print("player " + str(self.ledNumber) + " score:" + str(self.score))
+    def offence(self, vollied):
+        if not self.score:           # start a new game
+            self.score = 10          # reset with full health
+            self.relayMultiplier = 1 # and normal modifier
+        if vollied:
+            self.waitingForVolly = False
+            self.vollies = self.vollies + 1
+            if self.vollies is 2:
+                self.relayAward = 2
+            self.score = self.score + self.relayAward
+        else:
+            self.penalty(self.relayAward)
+        # self.printScore()
+    def defence(self, ballPos):
+        if ballPos is self.ledNumber:
+            self.waitingForVolly = True      # wait to see if player deflects ball
+        else:                                # important: only after our led
+            if self.waitingForVolly:         # A volly will set this to false
+                self.waitingForVolly = False # Lets only take a penalty once
+                self.penalty(2)              # penalty for missing
+                # self.printScore()
+
 # High level business end of code starts here!
 # instantiate hardware that is going to be used
-neo = PixelControl();            # instantiate added controls and constants for neopixels
+player1 = Player(2)
+#player2 = Player(7)
+neo = PixelControl()             # instantiate added controls and constants for neopixels
 buttonA = Button(board.BUTTON_A) # Creates a unique instance of Button class with pin of button A
 buttonB = Button(board.BUTTON_B) # ButtonB is a unique object from buttonA
 pongball = Ball(1)               # Create a pongball with x speed
 pongball.roll()                  # get dat ball rolling!
 
 def deflectA():
-    pongball.deflect(2) # Button A is near LED position 2
+    player1.offence(pongball.deflect(2)) # Button A is near LED position 2
 
 def deflectB():
     pongball.deflect(7) # Button B is near LED position 7
