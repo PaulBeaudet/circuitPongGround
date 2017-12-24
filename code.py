@@ -30,7 +30,7 @@ class PixelControl:
         self.PURPLE = (0x10, 0, 0x10)
         self.BLACK  = (0, 0, 0)
         self.NUMBEROF = 10
-        self.pixels = neopixel.NeoPixel(board.NEOPIXEL, self.NUMBEROF, brightness=.2) # setup and array of neopixels
+        self.pixels = neopixel.NeoPixel(board.NEOPIXEL, self.NUMBEROF, brightness=1) # setup and array of neopixels
         self.pixels[0] = self.BLACK
         self.pixels[1] = self.GREEN
         self.pixels[2] = self.PURPLE
@@ -112,10 +112,10 @@ class Ball:
         volocity = .298
         if self.frameDelay <= .05:
             volocity = .002
-        elif self.frameDelay > .05 and self.frameDelay <= .1:
+        elif self.frameDelay > .05 and self.frameDelay <= .15:
             volocity = .005
-        elif self.frameDelay > .1 and self.frameDelay <= .5:
-            volocity = .094
+        elif self.frameDelay > .15 and self.frameDelay <= .7:
+            volocity = .072
         if self.position is 7 or self.position is 2:
             if volly:                      # given this is a trigger for a volly
                 self.frameDelay = self.frameDelay - volocity
