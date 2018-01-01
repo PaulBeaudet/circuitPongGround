@@ -31,16 +31,10 @@ class PixelControl:
         self.BLACK  = (0, 0, 0)
         self.NUMBEROF = 10
         self.pixels = neopixel.NeoPixel(board.NEOPIXEL, self.NUMBEROF, brightness=1) # setup and array of neopixels
-        self.pixels[0] = self.BLACK
-        self.pixels[1] = self.GREEN
+        # self.pixels = [self.GREEN for i in range(0, self.NUMBEROF)]
+        self.pixels.fill(self.GREEN)
         self.pixels[2] = self.PURPLE
-        self.pixels[3] = self.GREEN
-        self.pixels[4] = self.BLACK
-        self.pixels[5] = self.BLACK
-        self.pixels[6] = self.GREEN
         self.pixels[7] = self.PURPLE
-        self.pixels[8] = self.GREEN
-        self.pixels[9] = self.BLACK
         self.pixels.show()                                # instantiate recorded changes
 
 class Button():                                           # multiple unique button objects can be created with this one class
@@ -79,7 +73,7 @@ class Ball:
     def __init__(self, startSpeed):
         self.position = neo.NUMBEROF
         self.lastPos = 0
-        self.offsetColor = neo.BLACK
+        self.offsetColor = neo.pixels[0]
         self.timer = JSTimer()
         self.frameDelay = startSpeed           # time to delay between frames, less is faster more is slow
         self.clockwise = True
@@ -133,6 +127,7 @@ class Ball:
             self.frameDelay = self.frameDelay + volocity # slow down ball given a miss
             self.vollyWait = False         # only do this once it gets polled on every frame
 
+
 class Player:      # tracks individual player state
     def __init__(self, ledNumber):
         self.score = 0
@@ -159,7 +154,7 @@ class Player:      # tracks individual player state
             self.score = self.score + self.relayAward
         else:
             self.penalty(self.relayAward)
-        # self.printScore()
+        self.printScore()
     def defence(self, ballPos):
         if ballPos is self.ledNumber:
             self.waitingForVolly = True      # wait to see if player deflects ball
@@ -172,7 +167,7 @@ class Player:      # tracks individual player state
 # High level business end of code starts here!
 # instantiate hardware that is going to be used
 player1 = Player(2)
-#player2 = Player(7)
+# player2 = Player(7)
 neo = PixelControl()             # instantiate added controls and constants for neopixels
 buttonA = Button(board.BUTTON_A) # Creates a unique instance of Button class with pin of button A
 buttonB = Button(board.BUTTON_B) # ButtonB is a unique object from buttonA
